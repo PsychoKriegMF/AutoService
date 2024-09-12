@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using System.IO;
 
 namespace AutoService
 {
@@ -51,7 +52,8 @@ namespace AutoService
                 "Mechanics " +
                 "(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "number INTEGER," +
-                "name VARCHAR);";
+                "name VARCHAR," +
+                "Avatar BLOB);";
             string init_data_Mechanics = "INSERT INTO Mechanics (number, name) " +
                 "VALUES " +
                 "(1, 'Иванов')," +
@@ -120,6 +122,48 @@ namespace AutoService
                     }
                 }
             }            
+            return result;
+        }
+
+        static public void AddAvatar(string _name, byte[] _image)
+        {
+            using (SQLiteConnection conn = new SQLiteConnection(path))
+            {
+                SQLiteCommand command = new SQLiteCommand(conn);
+                command.CommandText = @"UPDATE Mechanics SET Avatar=@Avatar " +
+                    $"WHERE Name LIKE '{_name}%';";
+                    command.Parameters.Add(new SQLiteParameter("@Avatar", _image));
+                conn.Open();
+                command.ExecuteNonQuery();
+            }
+        }
+
+        static public MemoryStream GetAvatar(string _name)
+        {
+            MemoryStream result = null;
+            byte[] _image = null;
+            using (SQLiteConnection conn = new SQLiteConnection(path))
+            {
+                SQLiteCommand cmd = new SQLiteCommand(conn);
+                string get_image = $"SELECT Avatar FROM Mechanics WHERE Name LIKE '{_name}%';";
+                cmd.CommandText = get_image;
+                conn.Open();
+                SQLiteDataReader reader = cmd.ExecuteReader();
+                if (reader.HasRows)
+                {
+                    while (reader.Read())
+                    {
+                        if(!reader.IsDBNull(0))
+                        {
+                            _image = (byte[])reader.GetValue(0);
+                        }
+                    }
+                }
+            }
+            if(_image != null)
+            {
+                result = new MemoryStream(_image);
+            }
             return result;
         }
 
